@@ -18,11 +18,11 @@ to control the leds connected to it.
 """
 
 if DEVICE == 'esp8266':
-    UDP_IP = '192.168.0.150'
+    UDP_IP = '0.0.0.0'
     """IP address of the ESP8266. Must match IP in ws2812_controller.ino"""
     UDP_PORT = 7777
     """Port number used for socket communication between Python and ESP8266"""
-    SOFTWARE_GAMMA_CORRECTION = False
+    SOFTWARE_GAMMA_CORRECTION = True
     """Set to False because the firmware handles gamma correction + dither"""
 
 if DEVICE == 'pi':
@@ -46,7 +46,7 @@ if DEVICE == 'blinkstick':
 USE_GUI = True
 """Whether or not to display a PyQtGraph GUI plot of visualization"""
 
-DISPLAY_FPS = True
+DISPLAY_FPS = False
 """Whether to display the FPS when running (can reduce performance)"""
 
 N_PIXELS = 60
@@ -58,7 +58,7 @@ GAMMA_TABLE_PATH = os.path.join(os.path.dirname(__file__), 'gamma_table.npy')
 MIC_RATE = 44100
 """Sampling frequency of the microphone in Hz"""
 
-FPS = 60
+FPS = 24
 """Desired refresh rate of the visualization (frames per second)
 
 FPS indicates the desired refresh rate, or frames-per-second, of the audio
