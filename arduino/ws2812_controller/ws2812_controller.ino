@@ -1,9 +1,4 @@
-/*
-* This example works for ESP8266 & ESP32 and uses the NeoPixelBus library instead of the one bundle
-* Sketch written by Joey Babcock - https://joeybabcock.me/blog/, and Scott Lawson (Below) 
-* Codebase created by ScottLawsonBC - https://github.com/scottlawsonbc
-*/
-#include <NeoPixelBus.h>
+#include <FastLED.h>
 
 #if defined(ESP8266)
 #include <ESP8266WiFi.h>
@@ -15,54 +10,54 @@
 #endif
 
 // Set to the number of LEDs in your LED strip
-#define NUM_LEDS 60
+#define NUM_LEDS 240
 // Maximum number of packets to hold in the buffer. Don't change this.
 #define BUFFER_LEN 1024
 // Toggles FPS output (1 = print FPS over serial, 0 = disable output)
-#define PRINT_FPS 1
+#define PRINT_FPS 0
 
-//NeoPixelBus settings
-const uint8_t PixelPin = 3;  // make sure to set this to the correct pin, ignored for Esp8266(set to 3 by default for DMA)
+// make sure to set this to the correct pin, ignored for Esp8266(set to 3 by default for DMA)
+#define LED_DT D5
+
+CRGB leds[NUM_LEDS];
 
 // Wifi and socket settings
 const char* ssid     = "YOUR_WIFI_SSID";
 const char* password = "YOUR_WIFI_PASSWORD";
 unsigned int localPort = 7777;
 char packetBuffer[BUFFER_LEN];
+bool WifiStatus = true;
 
 uint8_t N = 0;
 
 WiFiUDP port;
-// Network information
-// IP must match the IP in config.py
-IPAddress ip(192, 168, 0, 150);
-// Set gateway to your router's gateway
-IPAddress gateway(192, 168, 0, 1);
-IPAddress subnet(255, 255, 255, 0);
-NeoPixelBus<NeoGrbFeature, Neo800KbpsMethod> ledstrip(NUM_LEDS, PixelPin);
 
 void setup() {
+    pinMode(LED_BUILTIN, OUTPUT);
     Serial.begin(115200);
+
+    FastLED.addLeds<NEOPIXEL, LED_DT>(leds, NUM_LEDS);
+    FastLED.setMaxPowerInVoltsAndMilliamps(5,3000);
+    FastLED.setCorrection(TypicalPixelString);
+
     WiFi.mode(WIFI_STA);
-    WiFi.config(ip, gateway, subnet);
     WiFi.begin(ssid, password);
     Serial.println("");
+
+    FastLED.clear();
+    FastLED.show();
+    fill_solid(leds, NUM_LEDS, CRGB(255,255,255));
+    FastLED.show();
+    
     // Connect to wifi and print the IP address over serial
     while (WiFi.status() != WL_CONNECTED) {
-        delay(500);
+        delay(250);
         Serial.print(".");
+        digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
     }
     
-    Serial.println("");
-    Serial.print("Connected to ");
-    Serial.println(ssid);
-    Serial.print("IP address: ");
-    Serial.println(WiFi.localIP());
-    
+    digitalWrite(LED_BUILTIN, LOW);
     port.begin(localPort);
-    
-    ledstrip.Begin();//Begin output
-    ledstrip.Show();//Clear the strip for use
 }
 
 #if PRINT_FPS
@@ -71,18 +66,33 @@ void setup() {
 #endif
 
 void loop() {
+    if (WiFi.status() == WL_CONNECTED && !WifiStatus) {
+        WifiStatus = true;
+        digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
+    }
+    if (WiFi.status() != WL_CONNECTED && WifiStatus) {
+        WifiStatus = false;
+        digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
+        fill_solid(leds, NUM_LEDS, CRGB(255,255,255));
+        FastLED.show();
+    }
     // Read data over socket
     int packetSize = port.parsePacket();
     // If packets have been received, interpret the command
     if (packetSize) {
         int len = port.read(packetBuffer, BUFFER_LEN);
-        for(int i = 0; i < len; i+=4) {
+        if (len == 4 && (String)packetBuffer == "0xf0") {
+          port.beginPacket(port.remoteIP(), port.remotePort());
+          port.write(packetBuffer);
+          port.endPacket();
+        } else {
+          for(int i = 0; i < len; i+=4) {
             packetBuffer[len] = 0;
             N = packetBuffer[i];
-            RgbColor pixel((uint8_t)packetBuffer[i+1], (uint8_t)packetBuffer[i+2], (uint8_t)packetBuffer[i+3]);//color
-            ledstrip.SetPixelColor(N, pixel);//N is the pixel number
-        } 
-        ledstrip.Show();
+            leds[N] = CRGB((uint8_t)packetBuffer[i+1], (uint8_t)packetBuffer[i+2], (uint8_t)packetBuffer[i+3]);
+          } 
+          FastLED.show();
+        }
         #if PRINT_FPS
             fpsCounter++;
             Serial.print("/");//Monitors connection(shows jumps/jitters in packets)

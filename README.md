@@ -99,14 +99,14 @@ Running the visualization can be done using the command below.
 ## Arduino dependencies
 ESP8266 firmare is uploaded using the Arduino IDE. See [this tutorial](https://learn.sparkfun.com/tutorials/esp8266-thing-hookup-guide/installing-the-esp8266-arduino-addon) to setup the Arduino IDE for ESP8266.
 
-### Install NeoPixelBus library
-[Download Here](https://github.com/Makuna/NeoPixelBus) or using library manager, search for "NeoPixelBus".
+### Install FastLED library
+Using library manager, search for "FastLED".
 
 ## Hardware Connections
 ### ESP8266
 The ESP8266 has hardware support for [I²S](https://en.wikipedia.org/wiki/I%C2%B2S) and this peripheral is used <!-- by the [ws2812b i2s library](https://github.com/JoDaNl/esp8266_ws2812_i2s)  -->to control the ws2812b LED strip. This significantly improves performance compared to bit-banging the IO pin. Unfortunately, this means that the LED strip **must** be connected to the RX1 pin, which is not accessible in some ESP8266 modules (such as the ESP-01).
 
-The RX1 pin on the ESP8266 module should be connected to the data input pin of the ws2812b LED strip (often labelled DIN or D0).
+The RX1 pin on the ESP8266 module should be connected to the data input pin of the ws2812b LED strip (often labelled DIN or D5).
 
 For the NodeMCU v3 and Adafruit Feather HUZZAH, the location of the RX1 pin is shown in the images below. Many other modules also expose the RX1 pin.
 
@@ -134,13 +134,10 @@ The connections are:
 5. In [ws2812_controller.ino](arduino/ws2812_controller/ws2812_controller.ino):
   - Set `const char* ssid` to your router's SSID
   - Set `const char* password` to your router's password
-  - Set `IPAddress gateway` to match your router's gateway
-  - Set `IPAddress ip` to the IP address that you would like your ESP8266 to use (your choice)
   - Set `#define NUM_LEDS` to the number of LEDs in your LED strip
 6. Upload the [ws2812_controller.ino](arduino/ws2812_controller/ws2812_controller.ino) firmware to the ESP8266. Ensure that you have selected the correct ESP8266 board from the boards menu. In the dropdown menu, set `CPU Frequency` to 160 MHz for optimal performance.
 7. In [config.py](python/config.py):
   - Set `N_PIXELS` to the number of LEDs in your LED strip (must match `NUM_LEDS` in [ws2812_controller.ino](arduino/ws2812_controller/ws2812_controller.ino))
-  - Set `UDP_IP` to the IP address of your ESP8266 (must match `ip` in [ws2812_controller.ino](arduino/ws2812_controller/ws2812_controller.ino))
   - If needed, set `MIC_RATE` to your microphone sampling rate in Hz. Most of the time you will not need to change this.
 
 # Installation for Raspberry Pi

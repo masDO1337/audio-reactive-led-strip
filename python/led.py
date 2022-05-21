@@ -9,6 +9,16 @@ import config
 if config.DEVICE == 'esp8266':
     import socket
     _sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    if config.UDP_IP == '0.0.0.0':
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP) as sock:
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+            sock.sendto(b'0xf0', ("255.255.255.255", config.UDP_PORT))
+            data, addr = sock.recvfrom(1024)
+            sock.close()
+            if data == b'0xf0':
+                config.UDP_IP = addr[0]
+            else:
+                exit()
 # Raspberry Pi controls the LED strip directly
 elif config.DEVICE == 'pi':
     import neopixel
