@@ -52,7 +52,6 @@ void setup() {
     // Connect to wifi and print the IP address over serial
     while (WiFi.status() != WL_CONNECTED) {
         delay(250);
-        Serial.print(".");
         digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
     }
     
@@ -69,12 +68,17 @@ void loop() {
     if (WiFi.status() == WL_CONNECTED && !WifiStatus) {
         WifiStatus = true;
         digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
+        fill_solid(leds, NUM_LEDS, CRGB(255,255,255));
+        FastLED.show();
     }
     if (WiFi.status() != WL_CONNECTED && WifiStatus) {
         WifiStatus = false;
         digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
-        fill_solid(leds, NUM_LEDS, CRGB(255,255,255));
-        FastLED.show();
+        FastLED.clear();
+        for (int i = 0; i < NUM_LEDS; i += 4) {
+            leds[i] = CRGB(0, 0, 2);
+            FastLED.show();
+        }
     }
     // Read data over socket
     int packetSize = port.parsePacket();
