@@ -2,7 +2,7 @@ from __future__ import print_function
 from __future__ import division
 import time
 import numpy as np
-from scipy.ndimage.filters import gaussian_filter1d
+from scipy.ndimage import gaussian_filter1d
 import config
 import microphone
 import dsp
@@ -255,7 +255,7 @@ visualization_effect = visualize_spectrum
 if __name__ == '__main__':
     if config.USE_GUI:
         import pyqtgraph as pg
-        from pyqtgraph.Qt import QtGui, QtCore
+        import PyQt5.QtWidgets as QtGui
         # Create GUI window
         app = QtGui.QApplication([])
         view = pg.GraphicsView()
@@ -275,7 +275,7 @@ if __name__ == '__main__':
         # Visualization plot
         layout.nextRow()
         led_plot = layout.addPlot(title='Visualization Output', colspan=3)
-        led_plot.setRange(yRange=[-5, 260])
+        led_plot.setRange(yRange=[0, 260])
         led_plot.disableAutoRange(axis=pg.ViewBox.YAxis)
         # Pen for each of the color channel curves
         r_pen = pg.mkPen((255, 30, 30, 200), width=4)

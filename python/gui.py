@@ -2,10 +2,8 @@ from __future__ import print_function
 from __future__ import division
 import time
 import numpy as np
-from pyqtgraph.Qt import QtGui
-import pyqtgraph as pg
-from pyqtgraph.dockarea import *
-
+import PyQt5.QtWidgets as QtGui
+from pyqtgraph import PlotWidget, plot
 
 class GUI:
     plot = []
@@ -14,7 +12,7 @@ class GUI:
     def __init__(self, width=800, height=450, title=''):
         # Create GUI window
         self.app = QtGui.QApplication([])
-        self.win = pg.GraphicsWindow(title)
+        self.win = QtGui.QGraphicsView()
         self.win.resize(width, height)
         self.win.setWindowTitle(title)
         # Create GUI layout
@@ -22,7 +20,7 @@ class GUI:
         self.win.setLayout(self.layout)
 
     def add_plot(self, title):
-        new_plot = pg.PlotWidget()
+        new_plot = PlotWidget()
         self.layout.addWidget(new_plot)
         self.plot.append(new_plot)
         self.curve.append([])
@@ -38,7 +36,7 @@ if __name__ == '__main__':
     # Sin plot
     gui.add_plot(title='Sin Plot')
     gui.add_curve(plot_index=0)
-    gui.win.nextRow()
+    #gui.win.nextRow()
     # Cos plot
     gui.add_plot(title='Cos Plot')
     gui.add_curve(plot_index=1)
@@ -49,3 +47,4 @@ if __name__ == '__main__':
         gui.curve[1][0].setData(x=x, y=np.cos(x))
         gui.app.processEvents()
         time.sleep(1.0 / 30.0)
+        gui.win.show()
