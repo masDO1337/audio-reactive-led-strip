@@ -85,7 +85,7 @@ void loop() {
     // If packets have been received, interpret the command
     if (packetSize) {
         int len = port.read(packetBuffer, BUFFER_LEN);
-        if (len == 4 && (String)packetBuffer == "0xf0") {
+        if (len == 4 && (String)packetBuffer == "server") {
           port.beginPacket(port.remoteIP(), port.remotePort());
           port.write(packetBuffer);
           port.endPacket();

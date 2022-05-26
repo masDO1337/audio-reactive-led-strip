@@ -25,6 +25,9 @@ def start_stream(callback):
             if time.time() > prev_ovf_time + 1:
                 prev_ovf_time = time.time()
                 print('Audio buffer has overflowed {} times'.format(overflows))
+        except KeyboardInterrupt:
+            break
     stream.stop_stream()
     stream.close()
     p.terminate()
+    print("Exited") 

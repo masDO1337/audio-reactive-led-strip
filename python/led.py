@@ -12,10 +12,10 @@ if config.DEVICE == 'esp8266':
     if config.UDP_IP == '0.0.0.0':
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP) as sock:
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-            sock.sendto(b'0xf0', ("255.255.255.255", config.UDP_PORT))
+            sock.sendto(b'server', ("255.255.255.255", config.UDP_PORT))
             data, addr = sock.recvfrom(1024)
             sock.close()
-            if data == b'0xf0':
+            if data == b'server':
                 config.UDP_IP = addr[0]
             else:
                 exit()

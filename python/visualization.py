@@ -7,6 +7,7 @@ import config
 import microphone
 import dsp
 import led
+import random
 
 _time_prev = time.time() * 1000.0
 """The previous time that the frames_per_second() function was called"""
@@ -114,7 +115,7 @@ def visualize_scroll(y):
     b = int(np.max(y[2 * len(y) // 3:]))
     # Scrolling effect window
     p[:, 1:] = p[:, :-1]
-    p *= 0.98
+    p *= 0.99
     p = gaussian_filter1d(p, sigma=0.2)
     # Create new color originating at the center
     p[0, 0] = r
@@ -123,6 +124,36 @@ def visualize_scroll(y):
     # Update the LED strip
     return np.concatenate((p[:, ::-1], p), axis=1)
 
+def visualize_scroll_2(y):
+    """Effect that originates in the center and scrolls outwards"""
+    global p
+    y = y**2.0
+    gain.update(y)
+    y /= gain.value
+    y *= 255.0
+
+    scale = 1.2
+    r = int(np.max(y[:len(y) // 3]**scale))
+    g = int(np.max(y[len(y) // 3: 2 * len(y) // 3]**scale))
+    b = int(np.max(y[2 * len(y) // 3:]**scale))
+
+    p *= 0.98
+    p = gaussian_filter1d(p, sigma=0.2)
+
+    # Create new color
+    n = 25
+
+    while n < int((config.N_PIXELS // 2) - 1):
+        p[0, n] = r
+        p[1, n] = g
+        p[2, n] = b
+        n += 50
+
+    p[0, :] = gaussian_filter1d(p[0, :], sigma=5.0)
+    p[1, :] = gaussian_filter1d(p[1, :], sigma=5.0)
+    p[2, :] = gaussian_filter1d(p[2, :], sigma=5.0)
+    # Update the LED strip
+    return np.concatenate((p[:, ::-1], p), axis=1)
 
 def visualize_energy(y):
     """Effect that expands from the center with increasing sound energy"""
@@ -176,14 +207,10 @@ def visualize_spectrum(y):
     return output
 
 
-fft_plot_filter = dsp.ExpFilter(np.tile(1e-1, config.N_FFT_BINS),
-                         alpha_decay=0.5, alpha_rise=0.99)
-mel_gain = dsp.ExpFilter(np.tile(1e-1, config.N_FFT_BINS),
-                         alpha_decay=0.01, alpha_rise=0.99)
-mel_smoothing = dsp.ExpFilter(np.tile(1e-1, config.N_FFT_BINS),
-                         alpha_decay=0.5, alpha_rise=0.99)
-volume = dsp.ExpFilter(config.MIN_VOLUME_THRESHOLD,
-                       alpha_decay=0.02, alpha_rise=0.02)
+fft_plot_filter = dsp.ExpFilter(np.tile(1e-1, config.N_FFT_BINS), alpha_decay=0.5, alpha_rise=0.99)
+mel_gain = dsp.ExpFilter(np.tile(1e-1, config.N_FFT_BINS), alpha_decay=0.01, alpha_rise=0.99)
+mel_smoothing = dsp.ExpFilter(np.tile(1e-1, config.N_FFT_BINS), alpha_decay=0.5, alpha_rise=0.99)
+volume = dsp.ExpFilter(config.MIN_VOLUME_THRESHOLD, alpha_decay=0.02, alpha_rise=0.02)
 fft_window = np.hamming(int(config.MIC_RATE / config.FPS) * config.N_ROLLING_HISTORY)
 prev_fps_update = time.time()
 
@@ -265,7 +292,7 @@ if __name__ == '__main__':
         view.setWindowTitle('Visualization')
         view.resize(800,600)
         # Mel filterbank plot
-        fft_plot = layout.addPlot(title='Filterbank Output', colspan=3)
+        fft_plot = layout.addPlot(title='Filterbank Output', colspan=4)
         fft_plot.setRange(yRange=[-0.1, 1.2])
         fft_plot.disableAutoRange(axis=pg.ViewBox.YAxis)
         x_data = np.array(range(1, config.N_FFT_BINS + 1))
@@ -274,7 +301,7 @@ if __name__ == '__main__':
         fft_plot.addItem(mel_curve)
         # Visualization plot
         layout.nextRow()
-        led_plot = layout.addPlot(title='Visualization Output', colspan=3)
+        led_plot = layout.addPlot(title='Visualization Output', colspan=4)
         led_plot.setRange(yRange=[0, 260])
         led_plot.disableAutoRange(axis=pg.ViewBox.YAxis)
         # Pen for each of the color channel curves
@@ -309,9 +336,7 @@ if __name__ == '__main__':
         freq_slider.tickMoveFinished = freq_slider_change
         freq_slider.addTick((config.MIN_FREQUENCY / (config.MIC_RATE / 2.0))**0.5)
         freq_slider.addTick((config.MAX_FREQUENCY / (config.MIC_RATE / 2.0))**0.5)
-        freq_label.setText('Frequency range: {} - {} Hz'.format(
-            config.MIN_FREQUENCY,
-            config.MAX_FREQUENCY))
+        freq_label.setText('Frequency range: {} - {} Hz'.format(config.MIN_FREQUENCY, config.MAX_FREQUENCY))
         # Effect selection
         active_color = '#16dbeb'
         inactive_color = '#FFFFFF'
@@ -320,35 +345,48 @@ if __name__ == '__main__':
             visualization_effect = visualize_energy
             energy_label.setText('Energy', color=active_color)
             scroll_label.setText('Scroll', color=inactive_color)
+            scroll_2_label.setText('Scroll 2', color=inactive_color)
             spectrum_label.setText('Spectrum', color=inactive_color)
         def scroll_click(x):
             global visualization_effect
             visualization_effect = visualize_scroll
             energy_label.setText('Energy', color=inactive_color)
             scroll_label.setText('Scroll', color=active_color)
+            scroll_2_label.setText('Scroll 2', color=inactive_color)
+            spectrum_label.setText('Spectrum', color=inactive_color)
+        def scroll_2_click(x):
+            global visualization_effect
+            visualization_effect = visualize_scroll_2
+            energy_label.setText('Energy', color=inactive_color)
+            scroll_label.setText('Scroll', color=inactive_color)
+            scroll_2_label.setText('Scroll 2', color=active_color)
             spectrum_label.setText('Spectrum', color=inactive_color)
         def spectrum_click(x):
             global visualization_effect
             visualization_effect = visualize_spectrum
             energy_label.setText('Energy', color=inactive_color)
             scroll_label.setText('Scroll', color=inactive_color)
+            scroll_2_label.setText('Scroll 2', color=inactive_color)
             spectrum_label.setText('Spectrum', color=active_color)
         # Create effect "buttons" (labels with click event)
         energy_label = pg.LabelItem('Energy')
         scroll_label = pg.LabelItem('Scroll')
+        scroll_2_label = pg.LabelItem('Scroll 2')
         spectrum_label = pg.LabelItem('Spectrum')
         energy_label.mousePressEvent = energy_click
         scroll_label.mousePressEvent = scroll_click
+        scroll_2_label.mousePressEvent = scroll_2_click
         spectrum_label.mousePressEvent = spectrum_click
         energy_click(0)
         # Layout
         layout.nextRow()
-        layout.addItem(freq_label, colspan=3)
+        layout.addItem(freq_label, colspan=4)
         layout.nextRow()
-        layout.addItem(freq_slider, colspan=3)
+        layout.addItem(freq_slider, colspan=4)
         layout.nextRow()
         layout.addItem(energy_label)
         layout.addItem(scroll_label)
+        layout.addItem(scroll_2_label)
         layout.addItem(spectrum_label)
     # Initialize LEDs
     led.update()
