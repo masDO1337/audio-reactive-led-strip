@@ -125,30 +125,29 @@ def visualize_scroll(y):
     return np.concatenate((p[:, ::-1], p), axis=1)
 
 def visualize_scroll_2(y):
-    """Effect that originates in the center and scrolls outwards"""
     global p
     y = y**2.0
     gain.update(y)
     y /= gain.value
-    y *= 255.0
+    y *= 255.0 * 1.5
 
     scale = 1.2
     r = int(np.max(y[:len(y) // 3]**scale))
     g = int(np.max(y[len(y) // 3: 2 * len(y) // 3]**scale))
     b = int(np.max(y[2 * len(y) // 3:]**scale))
 
-    p *= 0.98
+    p *= 0.99
     p = gaussian_filter1d(p, sigma=0.2)
 
     # Create new color
-    n = 25
-
+    n = int(config.N_SCROLL_2 / 2)
     while n < int((config.N_PIXELS // 2) - 1):
         p[0, n] = r
         p[1, n] = g
         p[2, n] = b
-        n += 50
-
+        n += int(config.N_SCROLL_2)
+    
+    # Apply substantial blur to smooth the edges
     p[0, :] = gaussian_filter1d(p[0, :], sigma=5.0)
     p[1, :] = gaussian_filter1d(p[1, :], sigma=5.0)
     p[2, :] = gaussian_filter1d(p[2, :], sigma=5.0)
@@ -275,7 +274,7 @@ samples_per_frame = int(config.MIC_RATE / config.FPS)
 # Array containing the rolling audio sample window
 y_roll = np.random.rand(config.N_ROLLING_HISTORY, samples_per_frame) / 1e16
 
-visualization_effect = visualize_spectrum
+visualization_effect = visualize_scroll_2
 """Visualization effect to display on the LED strip"""
 
 
@@ -377,7 +376,7 @@ if __name__ == '__main__':
         scroll_label.mousePressEvent = scroll_click
         scroll_2_label.mousePressEvent = scroll_2_click
         spectrum_label.mousePressEvent = spectrum_click
-        energy_click(0)
+        scroll_2_click(0)
         # Layout
         layout.nextRow()
         layout.addItem(freq_label, colspan=4)

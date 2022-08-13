@@ -9,15 +9,22 @@ import config
 if config.DEVICE == 'esp8266':
     import socket
     _sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    if config.UDP_IP == '0.0.0.0':
+    """Find esp8266 if ip address is not entered"""
+    if config.UDP_IP == '':
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP) as sock:
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
             sock.sendto(b'server', ("255.255.255.255", config.UDP_PORT))
-            data, addr = sock.recvfrom(1024)
+            sock.settimeout(0.5)
+            try:
+                data, addr = sock.recvfrom(1024)
+            except socket.timeout:
+                print("Falled find esp8266")
+                exit()
             sock.close()
             if data == b'server':
                 config.UDP_IP = addr[0]
             else:
+                print("Falled verify esp8266")
                 exit()
 # Raspberry Pi controls the LED strip directly
 elif config.DEVICE == 'pi':
@@ -165,11 +172,11 @@ if __name__ == '__main__':
     import time
     # Turn all pixels off
     pixels *= 0
-    pixels[0, 0] = 255  # Set 1st pixel red
-    pixels[1, 1] = 255  # Set 2nd pixel green
-    pixels[2, 2] = 255  # Set 3rd pixel blue
-    print('Starting LED strand test')
-    while True:
-        pixels = np.roll(pixels, 1, axis=1)
-        update()
-        time.sleep(.1)
+    #pixels[0, 0] = 255  # Set 1st pixel red
+    #pixels[1, 1] = 255  # Set 2nd pixel green
+    #pixels[2, 2] = 255  # Set 3rd pixel blue
+    #print('Starting LED strand test')
+    #while True:
+    #    pixels = np.roll(pixels, 1, axis=1)
+    update()
+    #    time.sleep(.1)
