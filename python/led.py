@@ -9,17 +9,19 @@ import config
 if config.DEVICE == 'esp8266':
     import socket
     _sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    """Find esp8266 if ip address is not entered"""
-    if config.UDP_IP == '':
+    """Find esp8266 if ip address is empty"""
+    if not config.UDP_IP:
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP) as sock:
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-            sock.sendto(b'server', ("255.255.255.255", config.UDP_PORT))
-            sock.settimeout(0.5)
-            try:
-                data, addr = sock.recvfrom(1024)
-            except socket.timeout:
-                print("Falled find esp8266")
-                exit()
+            sock.settimeout(0.8)
+            x = True
+            while x:
+                sock.sendto(b'server', ("255.255.255.255", config.UDP_PORT))
+                try:
+                    data, addr = sock.recvfrom(1024)
+                    x = False
+                except socket.timeout:
+                    print("Falled timeout esp8266")
             sock.close()
             if data == b'server':
                 config.UDP_IP = addr[0]
@@ -166,17 +168,49 @@ def update():
 
 
 # Execute this file to run a LED strand test
-# If everything is working, you should see a red, green, and blue pixel scroll
+# If everything is working, you should see a sunrise.
 # across the LED strip continuously
 if __name__ == '__main__':
     import time
+    from scipy.ndimage import gaussian_filter1d
     # Turn all pixels off
     pixels *= 0
-    #pixels[0, 0] = 255  # Set 1st pixel red
-    #pixels[1, 1] = 255  # Set 2nd pixel green
-    #pixels[2, 2] = 255  # Set 3rd pixel blue
-    #print('Starting LED strand test')
-    #while True:
-    #    pixels = np.roll(pixels, 1, axis=1)
     update()
-    #    time.sleep(.1)
+
+    whiteLevel = 0
+    sun = (30 * config.N_PIXELS)/100
+    wakeDelay = 0.1
+
+    def remap(x, in_min, in_max, out_min, out_max):
+        return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
+
+    while whiteLevel < 135:
+
+        pixels[0,:] = whiteLevel
+
+        currentAurora = remap(whiteLevel, 0, 135, 0, config.N_PIXELS)
+        if currentAurora % 2 != 0:
+            currentAurora -= 1
+        
+        sunStart = int((config.N_PIXELS/2)-(currentAurora/2))
+
+        pixels[0,sunStart:sunStart+int(currentAurora)] = 127
+        pixels[1,sunStart:sunStart+int(currentAurora)] = 25
+
+        currentSun = remap(whiteLevel, 0, 135, 0, sun)
+        if currentSun % 2 != 0:
+            currentSun -= 1
+
+        sunStart = int((config.N_PIXELS/2)-(currentSun/2))
+        
+        pixels[0,sunStart:sunStart+int(currentSun)] = 255
+        pixels[1,sunStart:sunStart+int(currentSun)] = 47 + whiteLevel
+        pixels[2,sunStart:sunStart+int(currentSun)] = whiteLevel
+
+        pixels[0, :] = gaussian_filter1d(pixels[0, :], sigma=2.0)
+        pixels[1, :] = gaussian_filter1d(pixels[1, :], sigma=2.0)
+        pixels[2, :] = gaussian_filter1d(pixels[2, :], sigma=2.0)
+
+        update()
+        whiteLevel += 1
+        time.sleep(wakeDelay)

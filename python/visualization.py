@@ -126,31 +126,40 @@ def visualize_scroll(y):
 
 def visualize_scroll_2(y):
     global p
-    y = y**2.0
+    y = y ** 1.2
     gain.update(y)
     y /= gain.value
-    y *= 255.0 * 1.5
+    y *= 255.0
 
-    scale = 1.2
-    r = int(np.max(y[:len(y) // 3]**scale))
-    g = int(np.max(y[len(y) // 3: 2 * len(y) // 3]**scale))
-    b = int(np.max(y[2 * len(y) // 3:]**scale))
+    scale = 0.9
+    r = int(np.mean(y[:len(y) // 3]**scale))
+    g = int(np.mean(y[len(y) // 3: 2 * len(y) // 3]**scale))
+    b = int(np.mean(y[2 * len(y) // 3:]**scale))
 
-    p *= 0.99
-    p = gaussian_filter1d(p, sigma=0.2)
+    p *= 0.98
+    p = gaussian_filter1d(p, sigma=0.4)
 
     # Create new color
     n = int(config.N_SCROLL_2 / 2)
-    while n < int((config.N_PIXELS // 2) - 1):
-        p[0, n] = r
-        p[1, n] = g
-        p[2, n] = b
+    while n < int((config.N_PIXELS // 4) - 1):
+        if p[0, n] <= r or r > 25:
+            p[0, n-2:n+2] += r
+        else:
+            p[0, n-2:n+2] -= r
+        if p[1, n] <= g or g > 25:
+            p[1, n-2:n+2] += g
+        else:
+            p[1, n-2:n+2] -= g
+        if p[2, n] <= b or b > 25:
+            p[2, n-2:n+2] += b
+        else:
+            p[2, n-2:n+2] -= b
         n += int(config.N_SCROLL_2)
     
     # Apply substantial blur to smooth the edges
-    p[0, :] = gaussian_filter1d(p[0, :], sigma=5.0)
-    p[1, :] = gaussian_filter1d(p[1, :], sigma=5.0)
-    p[2, :] = gaussian_filter1d(p[2, :], sigma=5.0)
+    p[0, :] = gaussian_filter1d(p[0, :], sigma=6.0)
+    p[1, :] = gaussian_filter1d(p[1, :], sigma=6.0)
+    p[2, :] = gaussian_filter1d(p[2, :], sigma=6.0)
     # Update the LED strip
     return np.concatenate((p[:, ::-1], p), axis=1)
 
