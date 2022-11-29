@@ -126,34 +126,38 @@ def visualize_scroll(y):
 
 def visualize_scroll_2(y):
     global p
-    y = y ** 1.2
+    y = y ** 1
     gain.update(y)
     y /= gain.value
     y *= 255.0
 
-    scale = 0.9
-    r = int(np.mean(y[:len(y) // 3]**scale))
-    g = int(np.mean(y[len(y) // 3: 2 * len(y) // 3]**scale))
-    b = int(np.mean(y[2 * len(y) // 3:]**scale))
+    r = int(np.max(y[:len(y) // 3]))
+    g = int(np.max(y[len(y) // 3: 2 * len(y) // 3]))
+    b = int(np.max(y[2 * len(y) // 3:]))
 
-    p *= 0.98
-    p = gaussian_filter1d(p, sigma=0.4)
+    #p = gaussian_filter1d(p, sigma=0.4)
+    if r < 10:
+        p[0] *= 0.98
+    if g < 10:
+        p[1] *= 0.98
+    if b < 10:
+        p[2] *= 0.98
 
     # Create new color
     n = int(config.N_SCROLL_2 / 2)
     while n < int((config.N_PIXELS // 4) - 1):
-        if p[0, n] <= r or r > 25:
-            p[0, n-2:n+2] += r
+        if p[0, n] <= r or (p[0, n] < 30 and r > 1):
+            p[0, n:n+6] += r
         else:
-            p[0, n-2:n+2] -= r
-        if p[1, n] <= g or g > 25:
-            p[1, n-2:n+2] += g
+            p[0, n:n+6] *= 0.97
+        if p[1, n] <= g or (p[1, n] < 30 and g > 1):
+            p[1, n:n+6] += g
         else:
-            p[1, n-2:n+2] -= g
-        if p[2, n] <= b or b > 25:
-            p[2, n-2:n+2] += b
+            p[1, n:n+6] *= 0.97
+        if p[2, n] <= b or (p[2, n] < 30 and b > 1):
+            p[2, n:n+6] += b
         else:
-            p[2, n-2:n+2] -= b
+            p[2, n:n+6] *= 0.97
         n += int(config.N_SCROLL_2)
     
     # Apply substantial blur to smooth the edges
